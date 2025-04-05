@@ -4,7 +4,6 @@ from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 from flask import send_file
 
-CAPTCHA_STORE = {}  # Простое временное хранилище, можно заменить на Redis
 
 def generate_captcha_text(length=5):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))

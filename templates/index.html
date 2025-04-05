@@ -25,12 +25,10 @@
 
                     <p><strong>Time Left:</strong> <span id="time-left">Loading...</span></p>
 
-                    
                     <button id="extend-btn" class="btn btn-info w-100 mt-3" onclick="extendContainerLifetime()">
                         Extend Lifetime by {{ add_minutes }} minutes
                     </button>
 
-                    
                     <form method="POST" action="/stop" onsubmit="return handleStopContainer(event)">
                         <button type="submit" class="btn btn-danger w-100 mt-3">Stop Container</button>
                     </form>
@@ -41,6 +39,11 @@
                     {% else %}
                     <p>You don't have any active containers at the moment.</p>
                     <form method="POST" action="/deploy" onsubmit="return handleDeployContainer(event)">
+                        <div class="mb-3">
+                            <label for="captcha-input" class="form-label">Captcha</label>
+                            <input type="text" id="captcha-input" class="form-control" placeholder="Enter captcha" required>
+                            <img id="captcha-image" src="/captcha" alt="Captcha Image" class="mt-2 mb-2">
+                        </div>
                         <button type="submit" class="btn btn-primary w-100">Deploy New Container</button>
                     </form>
                     {% endif %}
@@ -64,9 +67,13 @@
 
     function handleDeployContainer(event) {
         event.preventDefault();
+
+        const captchaInput = document.getElementById("captcha-input").value.trim().toLowerCase();
+
         fetch("/deploy", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ captcha_input: captchaInput }),
         })
         .then(response => response.json())
         .then(handleResponse)
@@ -144,7 +151,6 @@
         document.getElementById("extend-btn").textContent = `Extend Lifetime by ${addMinutes} minutes`;
     }
 </script>
-
 
 </body>
 </html>
