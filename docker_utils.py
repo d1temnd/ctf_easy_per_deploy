@@ -40,27 +40,25 @@ def remove_container(container_id, port):
     print(f"[SUCCESS] Container {container_id} removed from database.")
 
 # Автоматическое удаление контейнера после истечения времени жизни
-def auto_remove_container(container_id, port):
+def auto_remove_containers():
     try:
         while True:
-            container_data = execute_query("SELECT expiration_time FROM containers WHERE id = ?", (container_id,), fetchone=True)
-            if not container_data:
-                print(f"[ERROR] Container {container_id} not found in database. Stopping thread.")
-                return  # Выходим из потока
-
-            expiration_time = container_data[0]
+            containers = execute_query("SELECT id, expiration_time, port FROM containers")
+            if not containers:
+                time.sleep(30)
+                continue
 
             current_time = int(time.time())
-            time_to_wait = expiration_time - current_time
+            for container in containers:
+                container_id, expiration_time, port = container
+                expiration_time = int(expiration_time)
 
-            if time_to_wait <= 0:
-                break  # Время истекло — удаляем контейнер
+                time_to_wait = expiration_time - current_time
 
-            print(f"[INFO] Container {container_id} will be checked again in 30 sec. Time left: {time_to_wait}s")
-            time.sleep(min(time_to_wait, 30))  # Проверяем каждые 30 сек или до истечения времени
+                if time_to_wait <= 0:
+                    remove_container(container_id, port)
 
-        print(f"[INFO] Removing container {container_id} due to expiration.")
-        remove_container(container_id, port)
+            time.sleep(30)
 
     except Exception as e:
-        print(f"[ERROR] Unexpected error in auto_remove_container: {e}")
+        print(f"[FATAL] Unexpected error: {e}")

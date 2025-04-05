@@ -8,7 +8,7 @@ import string
 from datetime import datetime
 
 from database import execute_query, remove_container_from_db
-from docker_utils import get_free_port, client, auto_remove_container, remove_container
+from docker_utils import get_free_port, client, auto_remove_containers, remove_container
 from captcha_utils import generate_captcha_image, generate_captcha_text
 from config import IMAGES_NAME, LEAVE_TIME, ADD_TIME, FLAG, PORT_IN_CONTAINER
 
@@ -76,7 +76,7 @@ def deploy_container():
         (container.id, port)
     )
 
-    threading.Thread(target=auto_remove_container, args=(container.id, port)).start()
+    # threading.Thread(target=auto_remove_containers, args=(container.id, port)).start()
 
     return jsonify({"message": "Container started", "port": port, "id": container.id, "expiration_time": expiration_time})
 
