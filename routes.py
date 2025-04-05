@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template, request, make_response
+from flask import Flask, jsonify, render_template, request, make_response, send_file
 import threading
 import time
 import uuid
@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from database import execute_query, remove_container_from_db
 from docker_utils import get_free_port, client, auto_remove_container, remove_container
 from config import IMAGES_NAME, LEAVE_TIME, ADD_TIME, FLAG, PORT_IN_CONTAINER
+from captcha_utils import generate_captcha_text, generate_captcha_image, CAPTCHA_STORE
 
 app = Flask(__name__)
 
@@ -33,6 +34,16 @@ def index():
 def deploy_container():
     user_uuid = request.cookies.get('user_uuid')
 
+    # Проверка капчи
+    captcha_input = request.json.get("captcha_input", "").strip().lower()
+    captcha_expected = CAPTCHA_STORE.get(user_uuid)
+
+    if not captcha_input or captcha_input != captcha_expected:
+        return jsonify({"error": "Invalid captcha"}), 400
+
+    # Удаляем использованную капчу
+    CAPTCHA_STORE.pop(user_uuid, None)
+    
     existing_container = execute_query("SELECT * FROM containers WHERE user_uuid = ?", (user_uuid,), fetchone=True)
     if existing_container:
         return jsonify({"error": "You already have a running container"}), 400
@@ -122,3 +133,14 @@ def extend_container_lifetime():
     )
 
     return jsonify({"message": "Container lifetime extended", "new_expiration_time": new_expiration_time})
+
+@app.route("/captcha")
+def get_captcha():
+    user_uuid = request.cookies.get('user_uuid')
+    if not user_uuid:
+        return "No UUID", 400
+
+    captcha_text = generate_captcha_text()
+    CAPTCHA_STORE[user_uuid] = captcha_text
+    image_data = generate_captcha_image(captcha_text)
+    return send_file(image_data, mimetype='image/png')
