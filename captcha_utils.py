@@ -15,7 +15,7 @@ def generate_captcha_image(captcha_text):
     try:
         font = ImageFont.truetype("arial.ttf", 30)
     except:
-        font = ImageFont.load_default()
+        font = ImageFont.load_default(30)
 
     draw.text((10, 5), captcha_text, font=font, fill=(0, 0, 0))
     buf = BytesIO()
