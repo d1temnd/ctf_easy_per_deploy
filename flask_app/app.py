@@ -8,8 +8,9 @@ import sys
 import atexit
 import os
 import logging
-# New import for resource monitoring
+# Import for resource monitoring and cleanup management
 import resource_monitor
+import cleanup_manager
 
 # Setup logging
 logger = logging.getLogger('ctf-deployer')
@@ -20,7 +21,7 @@ client = docker.from_env()
 # Global maintenance thread reference
 maintenance_thread = None
 
-# Function to cleanup all user containers and resources
+# Function to cleanup all resources
 def cleanup_all_resources():
     logger.info("Starting graceful shutdown and cleanup...")
     
@@ -33,6 +34,13 @@ def cleanup_all_resources():
         logger.info("Thread pool shutdown complete")
     except Exception as e:
         logger.error(f"Error shutting down thread pool: {e}")
+    
+    # Shutdown cleanup manager
+    try:
+        cleanup_manager.shutdown()
+        logger.info("Cleanup manager shutdown complete")
+    except Exception as e:
+        logger.error(f"Error shutting down cleanup manager: {e}")
     
     # Perform final database maintenance
     try:
@@ -126,7 +134,16 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Error initializing resource monitor: {e}")
     
-    # Start the maintenance timer AFTER database initialization
+    # Initialize the centralized cleanup manager
+    try:
+        logger.info("Initializing centralized cleanup manager...")
+        cleanup_manager.initialize(client)
+        logger.info("Cleanup manager initialized")
+    except Exception as e:
+        logger.error(f"Error initializing cleanup manager: {e}")
+    
+    # Start the maintenance timer for other maintenance tasks
+    # The container cleanup is now handled by cleanup_manager
     maintenance_thread = start_maintenance_timer()
     
     # Get debug mode from environment variable

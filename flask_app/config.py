@@ -32,48 +32,28 @@ if not env_loaded:
     logger.error("Failed to load environment file. Checked paths:")
     for path in possible_paths:
         logger.error(f"  - {path}")
-    
-    # Fallback to environment variables directly
-    logger.warning("Attempting to continue using environment variables directly...")
-    # Check if critical variables are present
-    required_vars = ['LEAVE_TIME', 'ADD_TIME', 'IMAGES_NAME', 'FLAG', 'PORT_IN_CONTAINER', 
-                    'START_RANGE', 'STOP_RANGE']
-    missing_vars = [var for var in required_vars if os.getenv(var) is None]
-    
-    if missing_vars:
-        logger.error(f"Critical environment variables missing: {', '.join(missing_vars)}")
-        sys.exit(1)
-    else:
-        logger.info("Found all critical environment variables in the environment")
-        env_loaded = True
+    logger.error("Cannot continue without environment variables")
+    sys.exit(1)
 
-# Helper function to get required environment variables with default fallback
-def get_env_or_fail(var_name, convert_func=str, default=None):
-    """Get environment variable or use default if provided, fail if not set and no default"""
+# Helper function to get required environment variables with no default
+def get_env_or_fail(var_name, convert_func=str):
+    """Get environment variable, fail if not set"""
     value = os.getenv(var_name)
     if value is None:
-        if default is not None:
-            logger.warning(f"Environment variable {var_name} not set, using default: {default}")
-            return default
         logger.error(f"Required environment variable {var_name} is not set")
         sys.exit(1)
     try:
         return convert_func(value)
     except Exception as e:
-        if default is not None:
-            logger.warning(f"Failed to convert {var_name} value '{value}': {str(e)}. Using default: {default}")
-            return default
         logger.error(f"Failed to convert {var_name} value '{value}': {str(e)}")
         sys.exit(1)
 
-# Container time settings
+# Container identification and time settings
+COMPOSE_PROJECT_NAME = get_env_or_fail('COMPOSE_PROJECT_NAME')
 LEAVE_TIME = get_env_or_fail('LEAVE_TIME', int)
 ADD_TIME = get_env_or_fail('ADD_TIME', int)
-
-# Container image and identification
 IMAGES_NAME = get_env_or_fail('IMAGES_NAME')
 FLAG = get_env_or_fail('FLAG')
-COMPOSE_PROJECT_NAME = get_env_or_fail('COMPOSE_PROJECT_NAME')
 
 # Port configuration
 PORT_IN_CONTAINER = get_env_or_fail('PORT_IN_CONTAINER', int)
@@ -92,10 +72,13 @@ DB_PORT = get_env_or_fail('DB_PORT', int)
 DB_NAME = get_env_or_fail('DB_NAME')
 DB_USER = get_env_or_fail('DB_USER')
 DB_PASSWORD = get_env_or_fail('DB_PASSWORD')
+DB_POOL_MIN = get_env_or_fail('DB_POOL_MIN', int)
+DB_POOL_MAX = get_env_or_fail('DB_POOL_MAX', int)
 
 # Challenge details
 CHALLENGE_TITLE = get_env_or_fail('CHALLENGE_TITLE')
 CHALLENGE_DESCRIPTION = get_env_or_fail('CHALLENGE_DESCRIPTION')
+COMMAND_CONNECT = get_env_or_fail('COMMAND_CONNECT')
 
 # Resource limits for user containers
 CONTAINER_MEMORY_LIMIT = get_env_or_fail('CONTAINER_MEMORY_LIMIT')
@@ -122,40 +105,33 @@ RATE_LIMIT_WINDOW = get_env_or_fail('RATE_LIMIT_WINDOW', int)
 DEBUG_MODE = get_env_or_fail('DEBUG_MODE', lambda x: x.lower() == 'true')
 BYPASS_CAPTCHA = get_env_or_fail('BYPASS_CAPTCHA', lambda x: x.lower() == 'true')
 
-# New configuration values with defaults (previously hardcoded)
-THREAD_POOL_SIZE = get_env_or_fail('THREAD_POOL_SIZE', int, default=50)
-MAINTENANCE_INTERVAL = get_env_or_fail('MAINTENANCE_INTERVAL', int, default=300)  # 5 minutes
-CONTAINER_CHECK_INTERVAL = get_env_or_fail('CONTAINER_CHECK_INTERVAL', int, default=30)  # 30 seconds
-PORT_ALLOCATION_MAX_ATTEMPTS = get_env_or_fail('PORT_ALLOCATION_MAX_ATTEMPTS', int, default=5)
-CAPTCHA_TTL = get_env_or_fail('CAPTCHA_TTL', int, default=300)  # 5 minutes
-STALE_PORT_MAX_AGE = get_env_or_fail('STALE_PORT_MAX_AGE', int, default=RATE_LIMIT_WINDOW)  # Default to rate limit window
+# Thread pool configuration
+THREAD_POOL_SIZE = get_env_or_fail('THREAD_POOL_SIZE', int)
+MAINTENANCE_INTERVAL = get_env_or_fail('MAINTENANCE_INTERVAL', int)
+CONTAINER_CHECK_INTERVAL = get_env_or_fail('CONTAINER_CHECK_INTERVAL', int)
+CAPTCHA_TTL = get_env_or_fail('CAPTCHA_TTL', int)
 
-# Global resource quota settings
-MAX_TOTAL_CONTAINERS = get_env_or_fail('MAX_TOTAL_CONTAINERS', int, default=100)
-MAX_TOTAL_CPU_PERCENT = get_env_or_fail('MAX_TOTAL_CPU_PERCENT', int, default=800)  # 800% = 8 cores fully utilized
-MAX_TOTAL_MEMORY_GB = get_env_or_fail('MAX_TOTAL_MEMORY_GB', float, default=32)  # Maximum total memory in GB
-RESOURCE_CHECK_INTERVAL = get_env_or_fail('RESOURCE_CHECK_INTERVAL', int, default=10)  # Seconds between resource checks
+# Resource allocation settings
+PORT_ALLOCATION_MAX_ATTEMPTS = get_env_or_fail('PORT_ALLOCATION_MAX_ATTEMPTS', int)
+STALE_PORT_MAX_AGE = get_env_or_fail('STALE_PORT_MAX_AGE', int)
 
-# Resource quota soft limits (percentage of hard limits, used for warnings)
-RESOURCE_SOFT_LIMIT_PERCENT = get_env_or_fail('RESOURCE_SOFT_LIMIT_PERCENT', int, default=80)  # 80% of hard limits
+# Maintenance cleanup settings
+MAINTENANCE_BATCH_SIZE = get_env_or_fail('MAINTENANCE_BATCH_SIZE', int)
+MAINTENANCE_POOL_MIN = get_env_or_fail('MAINTENANCE_POOL_MIN', int)
+MAINTENANCE_POOL_MAX = get_env_or_fail('MAINTENANCE_POOL_MAX', int)
 
-# Enable/disable global resource quotas
-ENABLE_RESOURCE_QUOTAS = get_env_or_fail('ENABLE_RESOURCE_QUOTAS', lambda x: x.lower() == 'true', default=True)
-
-# Logging configuration
-ENABLE_LOGS_ENDPOINT = get_env_or_fail('ENABLE_LOGS_ENDPOINT', lambda x: x.lower() == 'true', default=True)
-LOG_BUFFER_SIZE = get_env_or_fail('LOG_BUFFER_SIZE', int, default=5000)  # Max log entries to keep in memory
+# Global resource quotas
+MAX_TOTAL_CONTAINERS = get_env_or_fail('MAX_TOTAL_CONTAINERS', int)
+MAX_TOTAL_CPU_PERCENT = get_env_or_fail('MAX_TOTAL_CPU_PERCENT', int)
+MAX_TOTAL_MEMORY_GB = get_env_or_fail('MAX_TOTAL_MEMORY_GB', float)
+RESOURCE_CHECK_INTERVAL = get_env_or_fail('RESOURCE_CHECK_INTERVAL', int)
+RESOURCE_SOFT_LIMIT_PERCENT = get_env_or_fail('RESOURCE_SOFT_LIMIT_PERCENT', int)
+ENABLE_RESOURCE_QUOTAS = get_env_or_fail('ENABLE_RESOURCE_QUOTAS', lambda x: x.lower() == 'true')
 
 # Metrics configuration
-METRICS_ENABLED = get_env_or_fail('METRICS_ENABLED', lambda x: x.lower() == 'true', default=True)
-ADMIN_KEY = get_env_or_fail('ADMIN_KEY', default='change_this_to_a_secure_random_value')
-
-# Resource quota validation
-if MAX_TOTAL_CONTAINERS <= 0 or MAX_TOTAL_CPU_PERCENT <= 0 or MAX_TOTAL_MEMORY_GB <= 0:
-    logger.error(f"Resource quota values must be positive: Containers={MAX_TOTAL_CONTAINERS}, CPU={MAX_TOTAL_CPU_PERCENT}%, Memory={MAX_TOTAL_MEMORY_GB}GB")
-    sys.exit(1)
-
-logger.info(f"Global resource quotas configured: Max Containers={MAX_TOTAL_CONTAINERS}, CPU={MAX_TOTAL_CPU_PERCENT}%, Memory={MAX_TOTAL_MEMORY_GB}GB")
+METRICS_ENABLED = get_env_or_fail('METRICS_ENABLED', lambda x: x.lower() == 'true')
+ENABLE_LOGS_ENDPOINT = get_env_or_fail('ENABLE_LOGS_ENDPOINT', lambda x: x.lower() == 'true')
+ADMIN_KEY = get_env_or_fail('ADMIN_KEY')
 
 # Validation checks
 if START_RANGE >= STOP_RANGE:
@@ -165,9 +141,5 @@ if START_RANGE >= STOP_RANGE:
 if LEAVE_TIME <= 0 or ADD_TIME <= 0:
     logger.error(f"LEAVE_TIME ({LEAVE_TIME}) and ADD_TIME ({ADD_TIME}) must be positive")
     sys.exit(1)
-
-# Initialize log buffer
-if ENABLE_LOGS_ENDPOINT:
-    logger.info(f"In-memory log buffer initialized with capacity of {LOG_BUFFER_SIZE} entries")
 
 logger.info("Configuration loaded successfully")

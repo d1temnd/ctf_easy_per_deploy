@@ -124,6 +124,36 @@ def remove_container(container_id, port):
     except Exception as e:
         logger.error(f"Failed to clean up container {container_id} from database: {str(e)}")
 
+def create_and_start_container(container_config):
+    """
+    Create a container (docker create) then attempt to start it.
+    If starting fails, remove the partially created container 
+    and re-raise the exception.
+    
+    Returns:
+        container object on success
+    Raises:
+        docker.errors.APIError on failure
+    """
+    # Step 1: create the container (does not start it yet)
+    container = client.containers.create(**container_config)
+    logger.info(f"Created container skeleton {container.id} with name={container.name}")
+    
+    try:
+        # Step 2: try to start it
+        container.start()  # If port is in use, Docker may fail here
+        logger.info(f"Started container {container.id} on name={container.name}")
+        return container
+    except docker.errors.APIError as e:
+        # Remove the partially created container
+        logger.warning(f"Failed to start container {container.id}: {str(e)}. Removing it.")
+        try:
+            container.remove(force=True)
+            logger.info(f"Removed partial container {container.id} after start failure.")
+        except Exception as remove_err:
+            logger.error(f"Error removing partial container {container.id}: {remove_err}")
+        raise  # re-raise so the caller sees the original error
+
 # Automatically remove container after expiration time
 def auto_remove_container(container_id, port):
     try:

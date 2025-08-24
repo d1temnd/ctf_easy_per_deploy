@@ -183,13 +183,13 @@
 
                         <div class="challenge-info">
                             <p>🎮 <strong>Access your challenge:</strong></p>
-                            <div class="input-group mb-3">
-                                <input type="text" class="form-control bg-dark text-light" id="challenge-url" value="http://{{ hostname }}:{{ user_container[1] }}" readonly>
+                            <div class="input-group mb-7">
+                                <input type="text" class="form-control bg-dark text-light" id="challenge-url" value="{{ hostname }}" autocomplete="off" readonly>
                                 <button class="btn btn-outline-light" type="button" onclick="copyUrl()">Copy</button>
                             </div>
                             <small class="text-light">Click the button to open your challenge in a new window</small>
                             <div class="mt-2">
-                                <a href="http://{{ hostname }}:{{ user_container[1] }}" target="_blank" class="btn btn-sm btn-outline-info">Open Challenge</a>
+                                 <a href="{{ hostname }}" target="_blank" class="btn btn-sm btn-outline-info">Open Challenge</a>
                             </div>
                         </div>
                         
@@ -224,7 +224,7 @@
                         <!-- CAPTCHA Section -->
                         <div class="captcha-container" id="captcha-section">
                             <h5 class="mb-3">Verification Required</h5>
-                            <p class="small mb-3">To prevent abuse, please solve the math problem below:</p>
+                            <p class="small mb-3">To prevent abuse, type the characters below:</p>
                             
                             <div class="text-center mb-3">
                                 <img id="captcha-image" class="captcha-image" src="" alt="CAPTCHA Image">
@@ -233,7 +233,7 @@
                             
                             <div class="mb-3">
                                 <label for="captcha-answer" class="form-label">Your Answer:</label>
-                                <input type="number" class="form-control bg-dark text-light" id="captcha-answer" placeholder="Enter your answer">
+                                <input type="text" class="form-control bg-dark text-light" id="captcha-answer" placeholder="Enter your answer">
                             </div>
                         </div>
                         

@@ -147,16 +147,8 @@ def update_port_pool_metrics(total_ports, allocated_ports):
 def update_db_connection_metrics(pool_stats):
     """Update database connection pool metrics"""
     try:
-        # Only set metrics if we have valid numeric values
+        # Use only the metrics that we know we can reliably get
         
-        # Free connections
-        if isinstance(pool_stats.get('free_connections'), (int, float)):
-            DB_CONNECTION_POOL.labels('free').set(pool_stats.get('free_connections', 0))
-            
-        # Used connections
-        if isinstance(pool_stats.get('used_connections'), (int, float)):
-            DB_CONNECTION_POOL.labels('used').set(pool_stats.get('used_connections', 0))
-            
         # Min connections
         if isinstance(pool_stats.get('min_connections'), (int, float)):
             DB_CONNECTION_POOL.labels('min').set(pool_stats.get('min_connections', 0))
@@ -164,6 +156,12 @@ def update_db_connection_metrics(pool_stats):
         # Max connections
         if isinstance(pool_stats.get('max_connections'), (int, float)):
             DB_CONNECTION_POOL.labels('max').set(pool_stats.get('max_connections', 0))
+            
+        # Set the status
+        if pool_stats.get('status') == 'active':
+            DB_CONNECTION_POOL.labels('status').set(1)
+        else:
+            DB_CONNECTION_POOL.labels('status').set(0)
             
     except Exception as e:
         logger.error(f"Failed to update database connection metrics: {str(e)}")

@@ -151,6 +151,8 @@ check_required_env_vars() {
 
         # Debug option for flask_app
         "DEBUG_MODE" "BYPASS_CAPTCHA"
+
+        "COMPOSE_PROJECT_NAME"
     )
     
     # Check each required variable
